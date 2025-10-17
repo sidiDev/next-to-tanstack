@@ -1,0 +1,37 @@
+{
+  "name": "next-to-tanstack",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "next-to-tanstack": "./dist/index.js",
+    "n2t": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npx tsc",
+    "watch": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@babel/generator": "^7.28.3",
+    "@babel/parser": "^7.28.4",
+    "@babel/traverse": "^7.28.4",
+    "commander": "^14.0.1",
+    "execa": "^9.6.0",
+    "inquirer": "^12.9.6"
+  },
+  "devDependencies": {
+    "@babel/types": "^7.28.4",
+    "@types/babel__generator": "^7.27.0",
+    "@types/babel__traverse": "^7.28.0",
+    "@types/node": "^24.7.2",
+    "typescript": "^5.9.3"
+  }
+}
