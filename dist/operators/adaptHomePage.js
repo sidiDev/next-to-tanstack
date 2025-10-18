@@ -49,15 +49,15 @@ function adaptHomePage(useSrc) {
         : (0, path_1.join)(process.cwd(), "app");
     const appFiles = fs_1.default.readdirSync(appDir);
     // Regex to match layout.tsx or layout.js and capture the extension
-    const layoutRegex = /^page\.(tsx|js|jsx)$/;
+    const pageRegex = /^page\.(tsx|js|jsx)$/;
     // Find the layout file
-    const layoutFile = appFiles.find((file) => layoutRegex.test(file));
-    if (layoutFile) {
-        const match = layoutFile.match(layoutRegex);
+    const pageFile = appFiles.find((file) => pageRegex.test(file));
+    if (pageFile) {
+        const match = pageFile.match(pageRegex);
         const extension = match === null || match === void 0 ? void 0 : match[1]; // This will be either 'tsx' or 'js'
-        const rootLayoutPath = (0, path_1.join)(appDir, layoutFile);
-        const rootLayout = fs_1.default.readFileSync(rootLayoutPath, "utf8");
-        const ast = (0, parser_1.parse)(rootLayout, {
+        const pagePath = (0, path_1.join)(appDir, pageFile);
+        const page = fs_1.default.readFileSync(pagePath, "utf8");
+        const ast = (0, parser_1.parse)(page, {
             sourceType: "module",
             plugins: ["jsx", "typescript"],
         });
@@ -174,6 +174,16 @@ function adaptHomePage(useSrc) {
                     path.replaceWith(namedFunction);
                 }
             },
+            ExpressionStatement(path) {
+                if (t.isJSXElement(path.node.expression)) {
+                    if (t.isJSXIdentifier(path.node.expression.openingElement.name)) {
+                        if (path.node.expression.openingElement.name.name === "Image") {
+                            const imageElement = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier("img"), path.node.expression.openingElement.attributes, true), null, []);
+                            path.replaceWith(imageElement);
+                        }
+                    }
+                }
+            },
         });
         // If metadata was not found
         if (!metadataFound) {
@@ -200,9 +210,9 @@ function adaptHomePage(useSrc) {
             });
         }
         const transformed = (0, generator_1.default)(ast).code;
-        // fs.writeFileSync(rootLayoutPath, transformed);
-        // fs.renameSync(rootLayoutPath, rootLayoutPath.replace("layout", "__root"));
-        console.log(transformed);
+        fs_1.default.writeFileSync(pagePath, transformed);
+        fs_1.default.renameSync(pagePath, pagePath.replace("page", "index"));
+        // console.log(transformed);
     }
     else {
         console.error("No page.tsx or page.js found in app directory");

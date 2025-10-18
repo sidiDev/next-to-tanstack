@@ -13,19 +13,19 @@ export function adaptHomePage(useSrc: boolean) {
   const appFiles = fs.readdirSync(appDir);
 
   // Regex to match layout.tsx or layout.js and capture the extension
-  const layoutRegex = /^page\.(tsx|js|jsx)$/;
+  const pageRegex = /^page\.(tsx|js|jsx)$/;
 
   // Find the layout file
-  const layoutFile = appFiles.find((file) => layoutRegex.test(file));
+  const pageFile = appFiles.find((file) => pageRegex.test(file));
 
-  if (layoutFile) {
-    const match = layoutFile.match(layoutRegex);
+  if (pageFile) {
+    const match = pageFile.match(pageRegex);
     const extension = match?.[1]; // This will be either 'tsx' or 'js'
 
-    const rootLayoutPath = join(appDir, layoutFile);
-    const rootLayout = fs.readFileSync(rootLayoutPath, "utf8");
+    const pagePath = join(appDir, pageFile);
+    const page = fs.readFileSync(pagePath, "utf8");
 
-    const ast = parse(rootLayout, {
+    const ast = parse(page, {
       sourceType: "module",
       plugins: ["jsx", "typescript"],
     });
@@ -212,6 +212,24 @@ export function adaptHomePage(useSrc: boolean) {
           path.replaceWith(namedFunction);
         }
       },
+      ExpressionStatement(path) {
+        if (t.isJSXElement(path.node.expression)) {
+          if (t.isJSXIdentifier(path.node.expression.openingElement.name)) {
+            if (path.node.expression.openingElement.name.name === "Image") {
+              const imageElement = t.jsxElement(
+                t.jsxOpeningElement(
+                  t.jsxIdentifier("img"),
+                  path.node.expression.openingElement.attributes,
+                  true
+                ),
+                null,
+                []
+              );
+              path.replaceWith(imageElement);
+            }
+          }
+        }
+      },
     });
 
     // If metadata was not found
@@ -264,9 +282,9 @@ export function adaptHomePage(useSrc: boolean) {
     }
 
     const transformed = generate(ast).code;
-    // fs.writeFileSync(rootLayoutPath, transformed);
-    // fs.renameSync(rootLayoutPath, rootLayoutPath.replace("layout", "__root"));
-    console.log(transformed);
+    fs.writeFileSync(pagePath, transformed);
+    fs.renameSync(pagePath, pagePath.replace("page", "index"));
+    // console.log(transformed);
   } else {
     console.error("No page.tsx or page.js found in app directory");
   }

@@ -21,7 +21,7 @@ const program = new commander_1.Command();
 program
     .version("1.0.0")
     .name("next-to-tanstack")
-    .description("A CLI to migrate Next.js projects to Tanstack");
+    .description("A CLI to migrate Next.js projects to Tanstack start");
 program
     .command("migrate")
     .description("Migrate a Next.js project to Tanstack")
