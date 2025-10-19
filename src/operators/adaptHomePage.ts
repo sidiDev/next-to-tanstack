@@ -212,21 +212,19 @@ export function adaptHomePage(useSrc: boolean) {
           path.replaceWith(namedFunction);
         }
       },
-      ExpressionStatement(path) {
-        if (t.isJSXElement(path.node.expression)) {
-          if (t.isJSXIdentifier(path.node.expression.openingElement.name)) {
-            if (path.node.expression.openingElement.name.name === "Image") {
-              const imageElement = t.jsxElement(
-                t.jsxOpeningElement(
-                  t.jsxIdentifier("img"),
-                  path.node.expression.openingElement.attributes,
-                  true
-                ),
-                null,
-                []
-              );
-              path.replaceWith(imageElement);
-            }
+      JSXElement(path) {
+        if (t.isJSXIdentifier(path.node.openingElement.name)) {
+          if (path.node.openingElement.name.name === "Image") {
+            const imageElement = t.jsxElement(
+              t.jsxOpeningElement(
+                t.jsxIdentifier("img"),
+                path.node.openingElement.attributes,
+                true
+              ),
+              null,
+              []
+            );
+            path.replaceWith(imageElement);
           }
         }
       },

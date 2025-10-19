@@ -13,7 +13,7 @@ import path from "path";
 const program = new Command();
 
 program
-  .version("1.0.0")
+  .version("0.0.1")
   .name("next-to-tanstack")
   .description("A CLI to migrate Next.js projects to Tanstack start");
 
