@@ -7,8 +7,8 @@ Thanks for your interest! This project is in beta and needs help.
 ```bash
 git clone https://github.com/sididev/next-to-tanstack.git
 cd next-to-tanstack
-pnpm install
-pnpm run build
+npm install
+npm run build
 ```
 
 ## Project Structure
