@@ -1,7 +1,7 @@
 import fs from "fs";
 import { join } from "path";
 
-export async function initProjectConfig() {
+export async function initProjectConfig(useSrc: boolean) {
   console.log("createViteConfig");
 
   fs.writeFileSync(join(process.cwd(), "vite.config.ts"), viteConfig);
@@ -16,16 +16,28 @@ export async function initProjectConfig() {
     packageJson.scripts.start = "node .output/server/index.mjs";
   }
 
+  console.log(useSrc);
+
+  if (!useSrc) {
+    fs.mkdirSync(join(process.cwd(), "src"));
+  }
+
   // Write back with proper formatting
   fs.writeFileSync(
     packageJsonPath,
     JSON.stringify(packageJson, null, 2) + "\n",
     "utf8"
   );
+
+  fs.writeFileSync(join(process.cwd(), "tsconfig.json"), tsconfigJson, "utf8");
+  fs.writeFileSync(
+    join(process.cwd(), "src", "router.tsx"),
+    routerConfig,
+    "utf8"
+  );
 }
 
-const viteConfig = `
-// vite.config.ts
+const viteConfig = `// vite.config.ts
 import { defineConfig } from 'vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
@@ -39,7 +51,7 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     // Enables Vite to resolve imports using path aliases.
-    tsconfigPaths({ projects: ['./tsconfig.json'] }),
+    tsconfigPaths(),
     tanstackStart({
       srcDirectory: 'src', // This is the default
       router: {
@@ -50,4 +62,47 @@ export default defineConfig({
     viteReact(),
   ],
 })
+`;
+
+const tsconfigJson = `{
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+  "compilerOptions": {
+    "target": "ES2022",
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": false,
+    "noEmit": true,
+
+    /* Linting */
+    "skipLibCheck": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+`;
+
+const routerConfig = `import { createRouter } from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
+
+export function getRouter() {
+  const router = createRouter({
+    routeTree,
+    scrollRestoration: true,
+  });
+
+  return router;
+}
 `;

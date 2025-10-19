@@ -90,7 +90,7 @@ export function adaptRootLayout(useSrc: boolean) {
           const name = source.replace(/^\.\/(.*?)\.css$/, "$1css");
           const importCss = t.importDeclaration(
             [t.importDefaultSpecifier(t.identifier(name as string))],
-            t.stringLiteral(source)
+            t.stringLiteral(`${source}?url`)
           );
           path.replaceWith(importCss);
           path.skip();

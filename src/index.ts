@@ -6,6 +6,7 @@ import { handleDependencies } from "./operators/handleDependencies";
 import { initProjectConfig } from "./operators/initProjectConfig";
 import { adaptRootLayout } from "./operators/adaptRootLayout";
 import { adaptHomePage } from "./operators/adaptHomePage";
+import { moveAppDirectory } from "./operators/moveAppDirectory";
 import fs from "fs";
 import path from "path";
 
@@ -20,19 +21,19 @@ program
   .command("migrate")
   .description("Migrate a Next.js project to Tanstack")
   .action(async () => {
-    // const answers = await inquirer.prompt([
-    //   {
-    //     type: "confirm",
-    //     name: "modify",
-    //     message: "✔ ⚠️  This will modify your project. Continue?",
-    //     default: true,
-    //   },
-    // ]);
+    const answers = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "modify",
+        message: "✔ ⚠️  This will modify your project. Continue?",
+        default: true,
+      },
+    ]);
 
-    // if (!answers.modify) {
-    //   console.log("❌ Migration cancelled");
-    //   process.exit(1);
-    // }
+    if (!answers.modify) {
+      console.log("❌ Migration cancelled");
+      process.exit(1);
+    }
 
     // Detect project structure
     const useSrc = fs.existsSync(path.join(process.cwd(), "src", "app"));
@@ -40,10 +41,11 @@ program
       path.join(process.cwd(), useSrc ? "src/app" : "app")
     );
 
-    // await handleDependencies();
-    // await initProjectConfig();
-    // await adaptRootLayout(useSrc);
+    await handleDependencies();
+    await initProjectConfig(useSrc);
+    await adaptRootLayout(useSrc);
     await adaptHomePage(useSrc);
+    await moveAppDirectory(useSrc);
     // console.log(process.cwd());
   });
 
