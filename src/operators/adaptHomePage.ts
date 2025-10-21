@@ -75,13 +75,7 @@ export function adaptHomePage(useSrc: boolean) {
         }
 
         if (source.endsWith(".css")) {
-          const name = source.replace(/^\.\/(.*?)\.css$/, "$1css");
-          const importCss = t.importDeclaration(
-            [t.importDefaultSpecifier(t.identifier(name as string))],
-            t.stringLiteral(source)
-          );
-          path.replaceWith(importCss);
-          path.skip();
+          return;
         }
       },
       ExportNamedDeclaration(path) {
@@ -215,10 +209,30 @@ export function adaptHomePage(useSrc: boolean) {
       JSXElement(path) {
         if (t.isJSXIdentifier(path.node.openingElement.name)) {
           if (path.node.openingElement.name.name === "Image") {
+            const filteredAttributes = path.node.openingElement.attributes.flatMap(
+              (attr) => {
+                if (!t.isJSXAttribute(attr)) {
+                  return attr;
+                }
+
+                if (
+                  t.isJSXIdentifier(attr.name) &&
+                  attr.name.name === "priority"
+                ) {
+                  return t.jsxAttribute(
+                    t.jsxIdentifier("loading"),
+                    t.stringLiteral("eager")
+                  );
+                }
+
+                return attr;
+              }
+            );
+
             const imageElement = t.jsxElement(
               t.jsxOpeningElement(
                 t.jsxIdentifier("img"),
-                path.node.openingElement.attributes,
+                filteredAttributes,
                 true
               ),
               null,

@@ -18,11 +18,12 @@ src/
 ├── index.ts              # CLI entry point
 ├── utils.ts              # Helper functions
 └── operators/            # Migration steps
-    ├── adaptHomePage.ts
-    ├── adaptRootLayout.ts
-    ├── handleDependencies.ts
-    ├── initProjectConfig.ts
-    └── moveAppDirectory.ts
+    ├── adaptHomePage.ts           # Convert page.tsx → index.tsx
+    ├── adaptRootLayout.ts         # Convert layout.tsx → __root.tsx with font handling
+    ├── cleanupLegacyArtifacts.ts  # Remove .next/ and .turbo/ directories
+    ├── handleDependencies.ts      # Swap Next.js packages for TanStack
+    ├── initProjectConfig.ts       # Generate vite.config.ts, tsconfig.json, etc
+    └── moveAppDirectory.ts        # Move app/ to src/app/ if needed
 ```
 
 ## Testing

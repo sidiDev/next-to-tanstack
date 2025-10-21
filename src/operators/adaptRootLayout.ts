@@ -1,7 +1,7 @@
 import fs from "fs";
 import { join } from "path";
 import { parse } from "@babel/parser";
-import traverse from "@babel/traverse";
+import traverse, { NodePath } from "@babel/traverse";
 import generate from "@babel/generator";
 import * as t from "@babel/types";
 
@@ -33,13 +33,16 @@ export function adaptRootLayout(useSrc: boolean) {
     let metadataFound = false;
 
     const stylesheetsMeta: t.ObjectExpression[] = [];
+    const fontImportNames = new Set<string>();
+    const fontInstanceNames = new Set<string>();
+    const fontsToRemove = new Set<string>();
+    const nextFontImportPaths: NodePath<t.ImportDeclaration>[] = [];
 
-    // "./globals.css"
+    // Phase 1: Collect font import names and remove next/font imports
+    // Extract names like "Inter" from: import { Inter } from "next/font/google"
+    // These will be used later to track and remove font instances
 
     traverse(ast, {
-      //   enter(path) {
-      //     console.log(path.node.type);
-      //   },
       ImportDeclaration(path) {
         const value = path.node.source.value;
         if (value.endsWith(".css")) {
@@ -84,6 +87,18 @@ export function adaptRootLayout(useSrc: boolean) {
         const source = path.node.source.value;
         if (source == "next" || source == "next/script") {
           path.remove();
+        }
+
+        if (source.startsWith("next/font")) {
+          path.node.specifiers.forEach((specifier) => {
+            const local = specifier.local;
+            if (local) {
+              fontImportNames.add(local.name);
+            }
+          });
+          nextFontImportPaths.push(path);
+          path.skip();
+          return;
         }
 
         if (source.endsWith(".css")) {
@@ -440,6 +455,111 @@ export function adaptRootLayout(useSrc: boolean) {
       });
     }
 
+    // Phase 2 & 3: Remove font instance variables and clean up className expressions
+    // This removes all references to Next.js font functions like:
+    // - Variable declarations: const inter = Inter({ subsets: ["latin"] })
+    // - className usage: className={inter.className} or className={`${inter.className} flex`}
+    traverse(ast, {
+      VariableDeclaration(path) {
+        const declarations = path.node.declarations.filter((declaration) => {
+          if (
+            t.isIdentifier(declaration.id) &&
+            t.isCallExpression(declaration.init) &&
+            t.isIdentifier(declaration.init.callee) &&
+            fontImportNames.has(declaration.init.callee.name)
+          ) {
+            const name = declaration.id.name;
+            const binding = path.scope.getBinding(name);
+            const hasExternalReference =
+              binding?.referencePaths.some((referencePath) => {
+                if (!referencePath.isIdentifier()) {
+                  return true;
+                }
+                return !isClassNameReference(
+                  referencePath as NodePath<t.Identifier>
+                );
+              }) ?? false;
+
+            if (hasExternalReference) {
+              return true;
+            }
+
+            fontInstanceNames.add(name);
+            fontsToRemove.add(name);
+            return false;
+          }
+
+          return true;
+        });
+
+        if (declarations.length === 0) {
+          path.remove();
+        } else if (declarations.length !== path.node.declarations.length) {
+          path.node.declarations = declarations;
+        }
+      },
+      JSXAttribute(path) {
+        if (
+          t.isJSXIdentifier(path.node.name) &&
+          path.node.name.name === "className" &&
+          t.isJSXExpressionContainer(path.node.value)
+        ) {
+          const expressionPath = path.get("value").get("expression");
+
+          expressionPath.traverse({
+            MemberExpression(memberPath) {
+              if (
+                t.isIdentifier(memberPath.node.object) &&
+                fontInstanceNames.has(memberPath.node.object.name)
+              ) {
+                memberPath.replaceWith(t.stringLiteral(""));
+                memberPath.skip();
+              }
+            },
+            Identifier(identifierPath) {
+              if (
+                fontInstanceNames.has(identifierPath.node.name) &&
+                !(
+                  identifierPath.parentPath.isMemberExpression() &&
+                  (identifierPath.parentPath.node as t.MemberExpression).object ===
+                    identifierPath.node
+                )
+              ) {
+                identifierPath.replaceWith(t.stringLiteral(""));
+                identifierPath.skip();
+              }
+            },
+          });
+
+          const simplified = simplifyClassNameExpression(
+            expressionPath.node as t.Expression
+          );
+
+          if (!simplified) {
+            path.remove();
+          } else if (simplified !== expressionPath.node) {
+            expressionPath.replaceWith(simplified);
+          }
+        }
+      },
+    });
+
+    nextFontImportPaths.forEach((importPath) => {
+      importPath.node.specifiers = importPath.node.specifiers.filter(
+        (specifier) => {
+          const local = specifier.local;
+          if (local && fontsToRemove.has(local.name)) {
+            return false;
+          }
+          return true;
+        }
+      );
+
+      if (importPath.node.specifiers.length === 0) {
+        importPath.remove();
+      }
+    });
+
     const transformed = generate(ast).code;
     fs.writeFileSync(rootLayoutPath, transformed);
     fs.renameSync(rootLayoutPath, rootLayoutPath.replace("layout", "__root"));
@@ -447,4 +567,85 @@ export function adaptRootLayout(useSrc: boolean) {
   } else {
     console.error("No layout.tsx or layout.js found in app directory");
   }
+}
+
+function isClassNameReference(path: NodePath<t.Identifier>): boolean {
+  const jsxAttribute = path.findParent((parent) => parent.isJSXAttribute()) as
+    | NodePath<t.JSXAttribute>
+    | null;
+
+  if (!jsxAttribute || !jsxAttribute.isJSXAttribute()) {
+    return false;
+  }
+
+  return (
+    t.isJSXIdentifier(jsxAttribute.node.name) &&
+    jsxAttribute.node.name.name === "className"
+  );
+}
+
+function simplifyClassNameExpression(
+  node: t.Expression
+): t.Expression | null {
+  const evaluation = evaluateStringExpression(node);
+
+  if (evaluation.pure) {
+    const normalized = evaluation.value.trim().replace(/\s+/g, " ");
+    if (!normalized) {
+      return null;
+    }
+    return t.stringLiteral(normalized);
+  }
+
+  return node;
+}
+
+function evaluateStringExpression(
+  node: t.Expression
+): { pure: boolean; value: string } {
+  if (t.isStringLiteral(node)) {
+    return { pure: true, value: node.value };
+  }
+
+  if (t.isTemplateLiteral(node)) {
+    return evaluateTemplateLiteral(node);
+  }
+
+  if (t.isBinaryExpression(node) && node.operator === "+") {
+    const left = evaluateStringExpression(node.left as t.Expression);
+    const right = evaluateStringExpression(node.right as t.Expression);
+
+    if (left.pure && right.pure) {
+      return { pure: true, value: left.value + right.value };
+    }
+
+    return { pure: false, value: "" };
+  }
+
+  return { pure: false, value: "" };
+}
+
+function evaluateTemplateLiteral(
+  node: t.TemplateLiteral
+): { pure: boolean; value: string } {
+  let value = "";
+
+  for (let i = 0; i < node.quasis.length; i++) {
+    const quasi = node.quasis[i];
+    value += quasi.value.cooked ?? quasi.value.raw ?? "";
+
+    if (i < node.expressions.length) {
+      const exprEvaluation = evaluateStringExpression(
+        node.expressions[i] as t.Expression
+      );
+
+      if (!exprEvaluation.pure) {
+        return { pure: false, value: "" };
+      }
+
+      value += exprEvaluation.value;
+    }
+  }
+
+  return { pure: true, value };
 }

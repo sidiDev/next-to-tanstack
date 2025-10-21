@@ -13,13 +13,18 @@ export async function initProjectConfig(useSrc: boolean) {
     packageJson.type = "module";
     packageJson.scripts.dev = "vite dev";
     packageJson.scripts.build = "vite build";
-    packageJson.scripts.start = "node .output/server/index.mjs";
+    packageJson.scripts.start = "node dist/server/server.js";
+    packageJson.scripts.preview = "vite preview";
+  }
+
+  if (packageJson.devDependencies) {
+    delete packageJson.devDependencies["eslint-config-next"];
   }
 
   console.log(useSrc);
 
   if (!useSrc) {
-    fs.mkdirSync(join(process.cwd(), "src"));
+    fs.mkdirSync(join(process.cwd(), "src"), { recursive: true });
   }
 
   // Write back with proper formatting
@@ -35,6 +40,20 @@ export async function initProjectConfig(useSrc: boolean) {
     routerConfig,
     "utf8"
   );
+
+  const eslintConfigFiles = [
+    "eslint.config.js",
+    "eslint.config.mjs",
+    "eslint.config.cjs",
+  ];
+
+  const eslintConfigPath = eslintConfigFiles
+    .map((file) => join(process.cwd(), file))
+    .find((filePath) => fs.existsSync(filePath));
+
+  if (eslintConfigPath) {
+    fs.writeFileSync(eslintConfigPath, eslintConfig, "utf8");
+  }
 }
 
 const viteConfig = `// vite.config.ts
@@ -105,4 +124,23 @@ export function getRouter() {
 
   return router;
 }
+`;
+
+const eslintConfig = `export default [
+  {
+    files: ["**/*.{ts,tsx,js,jsx}"],
+    ignores: [
+      "node_modules/**",
+      "dist/**",
+      ".next/**",
+      "build/**",
+      ".turbo/**",
+    ],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+    },
+    rules: {},
+  },
+];
 `;
