@@ -1,6 +1,6 @@
 {
   "name": "next-to-tanstack",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "CLI tool to migrate Next.js projects to TanStack Start",
   "main": "index.js",
   "bin": {

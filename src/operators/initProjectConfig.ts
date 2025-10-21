@@ -2,8 +2,6 @@ import fs from "fs";
 import { join } from "path";
 
 export async function initProjectConfig(useSrc: boolean) {
-  console.log("createViteConfig");
-
   fs.writeFileSync(join(process.cwd(), "vite.config.ts"), viteConfig);
 
   const packageJsonPath = join(process.cwd(), "package.json");
@@ -20,8 +18,6 @@ export async function initProjectConfig(useSrc: boolean) {
   if (packageJson.devDependencies) {
     delete packageJson.devDependencies["eslint-config-next"];
   }
-
-  console.log(useSrc);
 
   if (!useSrc) {
     fs.mkdirSync(join(process.cwd(), "src"), { recursive: true });
