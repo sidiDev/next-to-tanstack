@@ -7,7 +7,6 @@ import { initProjectConfig } from "./operators/initProjectConfig";
 import { adaptRootLayout } from "./operators/adaptRootLayout";
 import { adaptHomePage } from "./operators/adaptHomePage";
 import { moveAppDirectory } from "./operators/moveAppDirectory";
-import { cleanupLegacyArtifacts } from "./operators/cleanupLegacyArtifacts";
 import fs from "fs";
 import path from "path";
 
@@ -47,7 +46,6 @@ program
     await adaptRootLayout(useSrc);
     await adaptHomePage(useSrc);
     await moveAppDirectory(useSrc);
-    cleanupLegacyArtifacts();
     // console.log(process.cwd());
   });
 
