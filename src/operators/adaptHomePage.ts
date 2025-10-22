@@ -221,7 +221,7 @@ export function adaptHomePage(useSrc: boolean) {
                 ) {
                   return t.jsxAttribute(
                     t.jsxIdentifier("loading"),
-                    t.stringLiteral("eager")
+                    t.stringLiteral("lazy")
                   );
                 }
 
