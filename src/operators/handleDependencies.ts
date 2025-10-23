@@ -1,5 +1,20 @@
 import { execa } from "execa";
 import { detectPackageManager, getNextPackages } from "../utils";
+import fs from "fs";
+import { join } from "path";
+
+function removeConfigFiles() {
+  const cwd = process.cwd();
+  const files = fs.readdirSync(cwd);
+
+  files.forEach((file) => {
+    if (file.startsWith("next.config.") || file.startsWith("postcss.config.")) {
+      const filePath = join(cwd, file);
+      fs.unlinkSync(filePath);
+      console.log(`✔ Removed ${file}`);
+    }
+  });
+}
 
 export async function handleDependencies() {
   const pm = detectPackageManager();
@@ -15,11 +30,6 @@ export async function handleDependencies() {
         reject: false,
       }
     ),
-    await execa("rm", ["next.config.*", "postcss.config.*"], {
-      cwd: process.cwd(),
-      stdio: "inherit",
-      shell: true,
-    }),
     await execa(
       pm,
       ["install", "@tanstack/react-router", "@tanstack/react-start"],
@@ -46,4 +56,7 @@ export async function handleDependencies() {
       }
     ),
   ]);
+
+  // Remove config files after dependencies are handled
+  removeConfigFiles();
 }
