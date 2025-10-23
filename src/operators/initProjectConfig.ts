@@ -15,10 +15,6 @@ export async function initProjectConfig(useSrc: boolean) {
     packageJson.scripts.preview = "vite preview";
   }
 
-  if (packageJson.devDependencies) {
-    delete packageJson.devDependencies["eslint-config-next"];
-  }
-
   if (!useSrc) {
     fs.mkdirSync(join(process.cwd(), "src"), { recursive: true });
   }

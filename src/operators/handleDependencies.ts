@@ -1,14 +1,20 @@
 import { execa } from "execa";
-import { detectPackageManager } from "../utils";
+import { detectPackageManager, getNextPackages } from "../utils";
 
 export async function handleDependencies() {
   const pm = detectPackageManager();
+  const nextPackages = getNextPackages();
 
   await Promise.all([
-    await execa(pm, ["uninstall", "next", "@tailwindcss/postcss"], {
-      cwd: process.cwd(),
-      stdio: "inherit",
-    }),
+    await execa(
+      pm,
+      ["uninstall", "next", "@tailwindcss/postcss", ...nextPackages],
+      {
+        cwd: process.cwd(),
+        stdio: "inherit",
+        reject: false,
+      }
+    ),
     await execa("rm", ["next.config.*", "postcss.config.*"], {
       cwd: process.cwd(),
       stdio: "inherit",

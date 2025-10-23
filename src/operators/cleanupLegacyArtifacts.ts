@@ -1,7 +1,7 @@
 import { existsSync, rmSync } from "fs";
 import { join } from "path";
 
-const LEGACY_FOLDERS = [".next", ".turbo"];
+const LEGACY_FOLDERS = [".next", ".turbo", "next-env.d.ts"];
 
 export function cleanupLegacyArtifacts() {
   const cwd = process.cwd();
@@ -14,4 +14,3 @@ export function cleanupLegacyArtifacts() {
     }
   });
 }
-

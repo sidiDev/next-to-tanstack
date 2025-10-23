@@ -209,8 +209,8 @@ export function adaptHomePage(useSrc: boolean) {
       JSXElement(path) {
         if (t.isJSXIdentifier(path.node.openingElement.name)) {
           if (path.node.openingElement.name.name === "Image") {
-            const filteredAttributes = path.node.openingElement.attributes.flatMap(
-              (attr) => {
+            const filteredAttributes =
+              path.node.openingElement.attributes.flatMap((attr) => {
                 if (!t.isJSXAttribute(attr)) {
                   return attr;
                 }
@@ -226,8 +226,7 @@ export function adaptHomePage(useSrc: boolean) {
                 }
 
                 return attr;
-              }
-            );
+              });
 
             const imageElement = t.jsxElement(
               t.jsxOpeningElement(
@@ -295,7 +294,10 @@ export function adaptHomePage(useSrc: boolean) {
 
     const transformed = generate(ast).code;
     fs.writeFileSync(pagePath, transformed);
-    fs.renameSync(pagePath, pagePath.replace("page", "index"));
+    fs.renameSync(
+      pagePath,
+      pagePath.replace(`page.${extension}`, `index.${extension}`)
+    );
     // console.log(transformed);
   } else {
     console.error("No page.tsx or page.js found in app directory");
