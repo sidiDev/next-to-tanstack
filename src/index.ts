@@ -30,7 +30,35 @@ program
       },
     ]);
 
-    if (!answers.modify) {
+    const structureMessage = `Before we begin, this tool assumes your project structure looks like this:\n\n` +
+      `├── next.config.ts\n` +
+      `├── package.json\n` +
+      `├── postcss.config.mjs\n` +
+      `├── public\n` +
+      `│   ├── file.svg\n` +
+      `│   ├── globe.svg\n` +
+      `│   ├── next.svg\n` +
+      `│   ├── vercel.svg\n` +
+      `│   └── window.svg\n` +
+      `├── README.md\n` +
+      `├── src\n` +
+      `│   └── app\n` +
+      `│       ├── favicon.ico\n` +
+      `│       ├── globals.css\n` +
+      `│       ├── layout.tsx\n` +
+      `│       └── page.tsx\n` +
+      `└── tsconfig.json`;
+
+    const { confirmStructure } = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "confirmStructure",
+        message: structureMessage,
+        default: true,
+      },
+    ]);
+
+    if (!confirmStructure || !answers.modify) {
       console.log("❌ Migration cancelled");
       process.exit(1);
     }
