@@ -4,6 +4,7 @@ import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import generate from "@babel/generator";
 import * as t from "@babel/types";
+import { ImageElement, LinkElement } from "../utils";
 
 export function adaptRootLayout(useSrc: boolean) {
   const appDir = useSrc
@@ -78,6 +79,10 @@ export function adaptRootLayout(useSrc: boolean) {
         // console.log("path.node.body", path.node.body);
 
         path.node.body.unshift(tanstackImports);
+      },
+      JSXElement(path) {
+        LinkElement(path);
+        ImageElement(path);
       },
       ImportDeclaration(path) {
         // console.log(path.node.source.value);

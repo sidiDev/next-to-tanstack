@@ -9,11 +9,12 @@ import { adaptHomePage } from "./operators/adaptHomePage";
 import { moveAppDirectory } from "./operators/moveAppDirectory";
 import fs from "fs";
 import path from "path";
+import { adaptPages } from "./operators/adaptPages";
 
 const program = new Command();
 
 program
-  .version("0.0.3")
+  .version("0.1.0")
   .name("next-to-tanstack")
   .description("A CLI to migrate Next.js projects to Tanstack start");
 
@@ -45,6 +46,7 @@ program
     await initProjectConfig(useSrc);
     await adaptRootLayout(useSrc);
     await adaptHomePage(useSrc);
+    await adaptPages(useSrc);
     await moveAppDirectory(useSrc);
     // console.log(process.cwd());
   });

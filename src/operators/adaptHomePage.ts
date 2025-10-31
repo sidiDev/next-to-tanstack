@@ -4,6 +4,12 @@ import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import generate from "@babel/generator";
 import * as t from "@babel/types";
+import {
+  ImageElement,
+  imageImportDeclaration,
+  LinkElement,
+  linkImportDeclaration,
+} from "../utils";
 
 export function adaptHomePage(useSrc: boolean) {
   const appDir = useSrc
@@ -66,17 +72,11 @@ export function adaptHomePage(useSrc: boolean) {
         // console.log(path.node.source.value);
         const source = path.node.source.value;
 
-        if (
-          source == "next" ||
-          source == "next/script" ||
-          source == "next/image"
-        ) {
+        if (source == "next" || source == "next/script") {
           path.remove();
         }
-
-        if (source.endsWith(".css")) {
-          return;
-        }
+        imageImportDeclaration(path);
+        linkImportDeclaration(path);
       },
       ExportNamedDeclaration(path) {
         if (path.node.declaration) {
@@ -207,39 +207,8 @@ export function adaptHomePage(useSrc: boolean) {
         }
       },
       JSXElement(path) {
-        if (t.isJSXIdentifier(path.node.openingElement.name)) {
-          if (path.node.openingElement.name.name === "Image") {
-            const filteredAttributes =
-              path.node.openingElement.attributes.flatMap((attr) => {
-                if (!t.isJSXAttribute(attr)) {
-                  return attr;
-                }
-
-                if (
-                  t.isJSXIdentifier(attr.name) &&
-                  attr.name.name === "priority"
-                ) {
-                  return t.jsxAttribute(
-                    t.jsxIdentifier("loading"),
-                    t.stringLiteral("lazy")
-                  );
-                }
-
-                return attr;
-              });
-
-            const imageElement = t.jsxElement(
-              t.jsxOpeningElement(
-                t.jsxIdentifier("img"),
-                filteredAttributes,
-                true
-              ),
-              null,
-              []
-            );
-            path.replaceWith(imageElement);
-          }
-        }
+        LinkElement(path);
+        ImageElement(path);
       },
     });
 
