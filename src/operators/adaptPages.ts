@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import { adaptStaticPage } from "../page-adapters/adaptStaticPage";
+import { convertDynamicSegment } from "../utils";
 
 type PageInfo = {
   filename: string;
@@ -8,8 +9,6 @@ type PageInfo = {
 };
 
 export async function adaptPages(useSrc: boolean) {
-  console.log(useSrc);
-
   const cwd = process.cwd();
   const appDir = useSrc ? join(cwd, "src", "app") : join(cwd, "app");
   const staticPageDirs = readdirSync(appDir, {
@@ -31,23 +30,29 @@ function adaptPage(
   const pages: PageInfo[] = [];
 
   page.forEach((file) => {
-    // this is long but it's faster than using a regex
-    const isDynamicSegment = /^\[[^\[\]]+\]$/.test(file.name);
     const isPage =
       file.name.endsWith(".jsx") ||
       file.name.endsWith(".tsx") ||
       file.name.endsWith(".js");
     if (file.isFile() && isPage) {
+      const isDynamicSegment = relativePath.includes("$");
       pages.push({
         filename: file.name,
         directories: relativePath,
       });
-      adaptStaticPage(join(pagePath, file.name), file.name, relativePath);
-    } else if (file.isDirectory() && !isDynamicSegment) {
+      adaptStaticPage(
+        join(pagePath, file.name),
+        file.name,
+        relativePath,
+        isDynamicSegment
+      );
+    } else if (file.isDirectory()) {
+      // Convert dynamic segments like [slug] to $slug for TanStack Router
+      const convertedName = convertDynamicSegment(file.name);
       const subPages = adaptPage(
         pagePath,
         file.name,
-        `${relativePath}/${file.name}`
+        `${relativePath}/${convertedName}`
       );
       pages.push(...subPages);
     }

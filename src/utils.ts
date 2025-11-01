@@ -150,3 +150,38 @@ export function ImageElement(path: NodePath<t.JSXElement>) {
     path.skip();
   }
 }
+
+/**
+ * Converts a single Next.js dynamic route segment to TanStack Router syntax
+ * Examples:
+ * - [slug] -> $slug
+ * - [id] -> $id
+ * - [...slug] -> $slug (catch-all routes)
+ * - [[...slug]] -> $slug (optional catch-all routes)
+ */
+export function convertDynamicSegment(segment: string): string {
+  if (/^\[{1,2}\.{0,3}[^\[\]]+\]{1,2}$/.test(segment)) {
+    return "$" + segment.replace(/^\[{1,2}\.{0,3}/, "").replace(/\]{1,2}$/, "");
+  }
+  return segment;
+}
+
+/**
+ * Converts a full path with Next.js dynamic route syntax to TanStack Router syntax
+ * Examples:
+ * - /blog/[slug] -> /blog/$slug
+ * - app/blog/[slug] -> app/blog/$slug
+ * - /posts/[category]/[id] -> /posts/$category/$id
+ * - /docs/[...slug] -> /docs/$slug
+ */
+export function convertDynamicPath(path: string): string {
+  const segments = path.split(/[\/\\]/);
+
+  // Convert each segment and rejoin
+  const convertedSegments = segments.map((segment) =>
+    convertDynamicSegment(segment)
+  );
+
+  const separator = path.includes("\\") ? "\\" : "/";
+  return convertedSegments.join(separator);
+}

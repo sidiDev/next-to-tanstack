@@ -6,6 +6,20 @@ A CLI tool to migrate Next.js projects to TanStack Start.
 
 ## Quick Start
 
+Insatll the CLI in your project using:
+
+```bash
+pnpm add next-to-tanstack
+```
+
+or
+
+```bash
+npm add next-to-tanstack
+```
+
+Run the command:
+
 ```bash
 npx next-to-tanstack migrate
 ```

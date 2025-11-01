@@ -8,12 +8,14 @@ import {
   linkImportDeclaration,
   LinkElement,
   ImageElement,
+  convertDynamicPath,
 } from "../utils";
 
 export function adaptStaticPage(
   pagePath: string,
   name: string,
-  relativePath: string
+  relativePath: string,
+  isDynamicSegment: boolean
 ) {
   const page = readFileSync(pagePath, "utf8");
 
@@ -260,10 +262,17 @@ export function adaptStaticPage(
   }
 
   const transformed = generate(ast).code;
+
+  function getFilePath() {
+    if (!isDynamicSegment)
+      return pagePath.replace(`page.${extension}`, `index.${extension}`);
+    return (
+      convertDynamicPath(pagePath.replace(`/page.${extension}`, "")) +
+      `.${extension}`
+    );
+  }
+
   writeFileSync(pagePath, transformed);
-  renameSync(
-    pagePath,
-    pagePath.replace(`page.${extension}`, `index.${extension}`)
-  );
+  renameSync(pagePath, getFilePath());
   // console.log(transformed);
 }
